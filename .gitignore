@@ -1,0 +1,136 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+coverage.html
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Environment files
+.env
+.env.local
+.env.prod
+.env.staging
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Redis dumps
+dump.rdb
+
+# Temporary files
+tmp/
+temp/
+
+# Build artifacts
+dist/
+build/
+
+# Docker volumes
+postgres_data/
+redis_data/
+prometheus_data/
+grafana_data/
+
+# Backup files
+backups/
+*.sql.gz
+
+# Profile files
+*.prof
+cpu.prof
+mem.prof
+
+# Test artifacts
+test-results/
+testdata/
+
+# Frontend build artifacts
+web/static/node_modules/
+web/static/dist/
+web/static/.parcel-cache/
+
+# Configuration overrides
+config/local/
+config/override/
+
+# SSL certificates (except examples)
+*.pem
+*.key
+*.crt
+*.csr
+!example.pem
+!example.key
+
+# Monitoring data
+prometheus-data/
+grafana-data/
+
+# Local development overrides
+docker-compose.override.yml
+
+# Generated files
+docs/api/swagger.yaml
+docs/api/swagger.json
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# Package files
+*.tar.gz
+*.zip
+
+# Air live reload
+tmp/
+air_tmp/
+
+# Local scripts
+scripts/local/
+
+# Load test results
+test-results.json
+
+# Benchmark results
+bench.out
+
+# Security scan results
+security-report.json
+
+# Dependency check results
+deps-check.json
