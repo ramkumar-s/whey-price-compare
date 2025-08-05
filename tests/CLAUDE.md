@@ -120,30 +120,94 @@ tests/
 └── helpers/           # Test utilities and helpers
 ```
 
-### Test Data Management
+### Test Data Management & Logging
 - **Fixtures**: JSON/YAML files with test data
 - **Factories**: Go functions to create test objects
 - **Database Seeding**: Consistent test database state
 - **Cleanup**: Automatic cleanup after each test
+- **Comprehensive Logging**: All tests MUST log to stdout for Claude Code visibility
+
+#### Required Test Logging Setup
+```go
+// Standard test logger setup (required in all test files)
+func SetupTestLogger(t *testing.T) *zap.Logger {
+    config := zap.NewDevelopmentConfig()
+    config.Level = zap.NewAtomicLevelAt(zap.DebugLevel) // Always verbose
+    config.OutputPaths = []string{"stdout"}            // Claude Code visibility
+    config.ErrorOutputPaths = []string{"stderr"}
+    config.Encoding = "console"                        // Human-readable
+    
+    logger, _ := config.Build()
+    
+    // Ensure logs are flushed at test completion
+    t.Cleanup(func() {
+        logger.Sync()
+    })
+    
+    return logger
+}
+
+// Required test logging pattern
+func TestExample(t *testing.T) {
+    logger := SetupTestLogger(t)
+    
+    logger.Info("Starting test",
+        zap.String("test", "TestExample"),
+        zap.String("package", "pkg/service"),
+    )
+    
+    // Test setup logging
+    logger.Debug("Test setup phase")
+    
+    // Execution logging
+    logger.Debug("Executing test operations")
+    
+    // Validation logging
+    logger.Info("Test completed",
+        zap.Bool("passed", true),
+        zap.String("result", "success"),
+    )
+}
+```
 
 ## Testing Patterns
 
-### Unit Testing Pattern
+### Unit Testing Pattern (With Required Logging)
 ```go
 func TestProductService_GetProduct(t *testing.T) {
+    // Required: Setup test logger for Claude Code visibility
+    logger := SetupTestLogger(t)
+    
+    logger.Info("Starting unit test",
+        zap.String("test", "TestProductService_GetProduct"),
+        zap.String("service", "ProductService"),
+    )
+    
     // Arrange
     mockRepo := &mocks.ProductRepository{}
-    service := NewProductService(mockRepo)
+    service := NewProductService(mockRepo, logger) // Pass logger to service
     expectedProduct := &Product{ID: "123", Name: "Test Protein"}
+    
+    logger.Debug("Test setup complete",
+        zap.String("mock_product_id", expectedProduct.ID),
+        zap.String("expected_name", expectedProduct.Name),
+    )
+    
     mockRepo.On("FindByID", "123").Return(expectedProduct, nil)
     
     // Act
-    result, err := service.GetProduct("123")
+    logger.Debug("Executing service method")
+    result, err := service.GetProduct(context.Background(), "123")
     
     // Assert
     assert.NoError(t, err)
     assert.Equal(t, expectedProduct, result)
     mockRepo.AssertExpectations(t)
+    
+    logger.Info("Unit test completed successfully",
+        zap.Bool("test_passed", err == nil && result != nil),
+        zap.String("result_name", result.Name),
+    )
 }
 ```
 

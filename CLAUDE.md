@@ -68,6 +68,38 @@ make migrate-up           # Apply PostgreSQL migrations
 4. **Test-Driven**: Write tests for new functionality
 5. **Documentation**: Update relevant docs when making changes
 6. **Sprint Awareness**: Check current sprint goals in project plan
+7. **Comprehensive Logging**: Use Uber Zap for all services and tests
+
+## Logging Requirements for Claude Code
+- **Library**: Use `go.uber.org/zap` for all logging (already in go.mod)
+- **Test Visibility**: All tests MUST log to stdout for Claude Code visibility
+- **Structured Logs**: Use JSON in production, console format in development/tests
+- **Log Levels**: DEBUG for detailed flow, INFO for operations, ERROR for failures
+- **Required Fields**: operation, request_id, service_name, timestamp
+- **Bundle Size**: Log bundle size validation (<14KB requirement)
+
+### Logging Patterns for Claude Code
+```go
+// Service logging pattern
+func (s *Service) Method(ctx context.Context) error {
+    logger := s.logger.With(
+        zap.String("operation", "Method"),
+        zap.String("request_id", GetRequestID(ctx)),
+    )
+    logger.Debug("Starting operation")
+    // ... business logic
+    logger.Info("Operation completed successfully")
+    return nil
+}
+
+// Test logging pattern  
+func TestMethod(t *testing.T) {
+    logger := SetupTestLogger(t) // Always outputs to stdout
+    logger.Info("Starting test", zap.String("test", "TestMethod"))
+    // ... test logic
+    logger.Info("Test completed", zap.Bool("passed", true))
+}
+```
 
 ## Quick Reference Links
 - **Project Plan**: `docs/project/project_plan.md`

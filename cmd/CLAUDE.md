@@ -79,11 +79,44 @@ LOG_LEVEL=debug|info|warn|error
 - Database configuration per service
 - Logging configuration (structured JSON)
 
-### Error Handling
-- Structured error responses
-- Request correlation IDs
-- Comprehensive logging with context
-- Graceful degradation under load
+### Error Handling & Logging
+- **Structured error responses** with HTTP status codes
+- **Request correlation IDs** for tracing across services
+- **Comprehensive Uber Zap logging** with structured context
+- **Graceful degradation** under load with proper error logging
+- **Test logging** always outputs to stdout for Claude Code visibility
+
+#### Service Logging Requirements
+```go
+// Required logger initialization in each service
+func NewService(logger *zap.Logger) *Service {
+    return &Service{
+        logger: logger.With(zap.String("service", "service_name")),
+    }
+}
+
+// Required logging in all operations
+func (s *Service) Operation(ctx context.Context, params ...interface{}) error {
+    logger := s.logger.With(
+        zap.String("operation", "Operation"),
+        zap.String("request_id", GetRequestID(ctx)),
+    )
+    
+    logger.Debug("Operation started", zap.Any("params", params))
+    
+    // Business logic with error logging
+    if err := s.doWork(); err != nil {
+        logger.Error("Operation failed", 
+            zap.Error(err),
+            zap.String("error_type", "business_logic_error"),
+        )
+        return err
+    }
+    
+    logger.Info("Operation completed successfully")
+    return nil
+}
+```
 
 ### Testing Approach
 - Unit tests with testify

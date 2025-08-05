@@ -26,26 +26,32 @@ build: ## Build all services
 build-prod: ## Build production Docker images
 	docker-compose -f docker-compose.prod.yml build --no-cache
 
-# Testing
+# Testing (with Claude Code logging)
 test-critical: ## Run critical tests (fast feedback)
-	go test -v -race -short -tags=critical ./internal/... ./pkg/...
+	go test -v -race -short -tags=critical ./internal/... ./pkg/... 2>&1
 
 test-unit: ## Run unit tests
-	go test -v -race -coverprofile=coverage.out ./internal/...
-	go test -v -race -coverprofile=coverage.out ./pkg/...
+	go test -v -race -coverprofile=coverage.out ./internal/... 2>&1
+	go test -v -race -coverprofile=coverage.out ./pkg/... 2>&1
 
 test-integration: ## Run integration tests
-	go test -v -tags=integration ./tests/integration/...
+	go test -v -tags=integration ./tests/integration/... 2>&1
 
 test-contracts: ## Run contract tests
-	go test -v -tags=contracts ./tests/contracts/...
+	go test -v -tags=contracts ./tests/contracts/... 2>&1
 
 test-e2e: ## Run end-to-end tests
-	go test -v -tags=e2e ./tests/e2e/...
+	go test -v -tags=e2e ./tests/e2e/... 2>&1
 
 test-all: ## Run all tests with coverage
-	go test -v -race -coverprofile=coverage.out -tags="unit integration contracts" ./...
+	go test -v -race -coverprofile=coverage.out -tags="unit integration contracts" ./... 2>&1
 	go tool cover -html=coverage.out -o coverage.html
+
+test-verbose: ## Run tests with maximum verbosity for Claude Code
+	go test -v -race -count=1 ./... 2>&1 | tee test_output.log
+
+test-debug: ## Run tests with debug logging enabled
+	LOG_LEVEL=debug go test -v -race ./... 2>&1
 
 test-load: ## Run load tests
 	k6 run tests/load/search_performance.js
