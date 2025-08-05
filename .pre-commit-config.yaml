@@ -1,0 +1,109 @@
+# Pre-commit configuration
+# Install: pip install pre-commit && pre-commit install
+
+repos:
+  # Go specific hooks
+  - repo: local
+    hooks:
+      - id: go-fmt
+        name: Go Format
+        entry: gofmt
+        language: system
+        args: ["-s", "-w"]
+        files: '\.go$'
+        
+      - id: go-vet
+        name: Go Vet
+        entry: go
+        language: system
+        args: ["vet", "./..."]
+        files: '\.go$'
+        pass_filenames: false
+        
+      - id: go-mod-tidy
+        name: Go Mod Tidy
+        entry: go
+        language: system
+        args: ["mod", "tidy"]
+        files: '^go\.(mod|sum)$'
+        pass_filenames: false
+        
+      - id: go-critical-tests
+        name: Go Critical Tests
+        entry: go
+        language: system
+        args: ["test", "-short", "-tags=critical", "./internal/...", "./pkg/..."]
+        files: '\.go$'
+        pass_filenames: false
+
+  # Security
+  - repo: https://github.com/trufflesecurity/trufflehog
+    rev: v3.63.2
+    hooks:
+      - id: trufflehog
+        name: TruffleHog Secret Scanning
+        args: ["--regex", "--entropy=False", "--max_depth=3"]
+        
+  # General
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+        exclude: '\.md$'
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1024']
+      - id: detect-private-key
+
+  # Frontend (if package.json exists)
+  - repo: local
+    hooks:
+      - id: npm-lint
+        name: NPM Lint
+        entry: bash
+        language: system
+        args: ["-c", "cd web/static && npm run lint"]
+        files: '\.(js|ts|jsx|tsx)$'
+        require_serial: true
+        
+      - id: npm-format
+        name: NPM Format Check
+        entry: bash
+        language: system
+        args: ["-c", "cd web/static && npm run format:check"]
+        files: '\.(js|ts|jsx|tsx|css|scss|json)$'
+        require_serial: true
+
+  # Documentation
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.17
+    hooks:
+      - id: mdformat
+        args: ["--wrap", "80"]
+        additional_dependencies:
+          - mdformat-gfm
+          - mdformat-frontmatter
+
+  # Docker
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        args: ["--ignore", "DL3008", "--ignore", "DL3015"]
+
+# Global settings
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

@@ -1,0 +1,218 @@
+# Pre-commit workflow - runs on every commit
+name: Pre-commit Checks
+
+on:
+  push:
+    branches: [ "**" ]  # All branches
+  pull_request:
+    branches: [ main ]
+
+env:
+  GO_VERSION: '1.21'
+
+jobs:
+  pre-commit:
+    name: Pre-commit Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Install dependencies
+      run: go mod download
+
+    # Fast syntax and format checks
+    - name: Go format check
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "❌ Code is not formatted. Run 'gofmt -s -w .'"
+          gofmt -s -l .
+          exit 1
+        fi
+        echo "✅ Code is properly formatted"
+
+    - name: Go vet
+      run: |
+        go vet ./...
+        echo "✅ Go vet passed"
+
+    - name: Go mod tidy check
+      run: |
+        go mod tidy
+        if ! git diff --quiet go.mod go.sum; then
+          echo "❌ go.mod or go.sum not up to date. Run 'go mod tidy'"
+          git diff go.mod go.sum
+          exit 1
+        fi
+        echo "✅ go.mod and go.sum are up to date"
+
+    # Fast compilation check
+    - name: Build check
+      run: |
+        go build -v ./cmd/api
+        go build -v ./cmd/scraper  
+        go build -v ./cmd/mcp
+        echo "✅ All services compile successfully"
+
+    # Run only critical unit tests (fast feedback)
+    - name: Critical unit tests
+      run: |
+        go test -short -tags=critical ./internal/...
+        go test -short -tags=critical ./pkg/...
+        echo "✅ Critical unit tests passed"
+
+    # Secret detection
+    - name: Secret detection
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified
+
+    # License check
+    - name: License header check
+      run: |
+        # Check for license headers in Go files
+        if find . -name "*.go" -not -path "./vendor/*" -exec grep -L "Copyright\|License" {} \; | head -5 | grep -q .; then
+          echo "⚠️  Some Go files missing license headers"
+          # Don't fail for now, just warn
+        else
+          echo "✅ License headers present"
+        fi
+
+    # Dependency vulnerability check (fast)
+    - name: Go vulnerability check
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
+        echo "✅ No known vulnerabilities"
+
+  # Lint check (separate job for better parallelization)
+  lint:
+    name: Lint Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=3m --fast
+
+  # Frontend pre-commit checks
+  frontend-checks:
+    name: Frontend Pre-commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: web/static/package-lock.json
+        
+    - name: Install dependencies
+      working-directory: web/static
+      run: npm ci --prefer-offline
+      
+    - name: ESLint
+      working-directory: web/static
+      run: npm run lint
+      
+    - name: Prettier check
+      working-directory: web/static
+      run: npm run format:check
+      
+    - name: TypeScript check (if applicable)
+      working-directory: web/static
+      run: |
+        if [ -f "tsconfig.json" ]; then
+          npm run type-check
+        else
+          echo "ℹ️  No TypeScript configuration found"
+        fi
+
+  # Security pre-commit (fast security checks only)
+  security:
+    name: Security Pre-commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: gosec (fast mode)
+      uses: securecodewarrior/github-action-gosec@master
+      with:
+        args: '-fmt json -out gosec.json -stdout -severity medium ./...'
+      continue-on-error: true
+
+    - name: Check gosec results
+      run: |
+        if [ -f gosec.json ]; then
+          HIGH_ISSUES=$(jq '.Stats.NumFound // 0' gosec.json)
+          if [ "$HIGH_ISSUES" -gt 0 ]; then
+            echo "⚠️  Found $HIGH_ISSUES security issues"
+            jq -r '.Issues[]? | "⚠️  \(.file):\(.line) - \(.details)"' gosec.json | head -5
+            echo "Full report available in CI pipeline"
+          else
+            echo "✅ No high-severity security issues found"
+          fi
+        fi
+
+  # Status check
+  pre-commit-complete:
+    name: Pre-commit Complete
+    runs-on: ubuntu-latest
+    needs: [pre-commit, lint, frontend-checks, security]
+    if: always()
+    
+    steps:
+    - name: Check results
+      run: |
+        if [[ "${{ needs.pre-commit.result }}" == "success" && \
+              "${{ needs.lint.result }}" == "success" && \
+              "${{ needs.frontend-checks.result }}" == "success" && \
+              "${{ needs.security.result }}" == "success" ]]; then
+          echo "✅ All pre-commit checks passed!"
+          echo "🚀 Ready for push to remote"
+        else
+          echo "❌ Some pre-commit checks failed:"
+          echo "  • Pre-commit: ${{ needs.pre-commit.result }}"
+          echo "  • Lint: ${{ needs.lint.result }}"
+          echo "  • Frontend: ${{ needs.frontend-checks.result }}"
+          echo "  • Security: ${{ needs.security.result }}"
+          exit 1
+        fi
