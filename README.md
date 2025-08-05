@@ -9,6 +9,11 @@ A ultra-fast, lightweight price comparison platform for whey protein products ac
 - **Real-time Updates**: Automated price scraping every 30 minutes
 - **Smart Search**: Full-text search with brand, flavor, and weight filtering
 - **Affiliate Optimized**: Fast loading maximizes click-through rates to retailer sites
+- **MCP Integration**: Model Context Protocol server for AI assistant integrations
+- **User Features**: Price alerts, favorites, personalized recommendations (requires account)
+- **Multi-Auth**: Email/password + social login (Google, GitHub, Facebook)
+- **API Access**: Freemium B2B API with rate limiting and analytics
+- **GDPR Compliant**: Encrypted PII storage, data export/deletion, consent management
 
 ## 🚀 Quick Start
 
@@ -36,6 +41,9 @@ make run-api
 # Start scraper service
 make run-scraper
 
+# Start MCP server (optional)
+make run-mcp
+
 # Visit http://localhost:8080
 ```
 
@@ -61,13 +69,15 @@ make run-scraper
 ```
 ├── cmd/
 │   ├── api/                    # API server
-│   └── scraper/               # Price scraper service
+│   ├── scraper/               # Price scraper service
+│   └── mcp/                   # MCP server for AI integrations
 ├── internal/
 │   ├── domain/                # Business logic
 │   ├── handlers/              # HTTP handlers
 │   ├── repositories/          # Data access
 │   ├── services/              # Business services
-│   └── scrapers/              # Extensible scraper framework
+│   ├── scrapers/              # Extensible scraper framework
+│   └── mcp/                   # MCP protocol implementation
 ├── pkg/
 │   ├── logger/                # Structured logging
 │   ├── telemetry/             # OpenTelemetry setup
@@ -92,8 +102,14 @@ make run-scraper
 │   ├── api/                   # API specification
 │   ├── architecture/          # System architecture
 │   ├── deployment/            # Deployment guides
-│   └── development/           # Development guides
-└── .github/                   # GitHub workflows and templates
+│   └── development/           # Development guides (includes CI/CD strategy)
+├── .github/
+│   └── workflows/             # GitHub Actions CI/CD pipelines
+│       ├── ci.yml             # Continuous Integration
+│       ├── cd-staging.yml     # Staging deployment  
+│       ├── cd-production.yml  # Production deployment
+│       └── pre-commit.yml     # Pre-commit validation
+└── scripts/                   # Deployment and automation scripts
 ```
 
 ## 🧪 Testing Strategy
@@ -163,11 +179,14 @@ This project is optimized for AI-assisted development:
 - Structured logging for debugging
 - Contract-first API design
 
-### Code Quality
+### Code Quality & CI/CD
 - **Linting**: golangci-lint with comprehensive rules
-- **Formatting**: gofmt + goimports
-- **Security**: gosec vulnerability scanning
+- **Formatting**: gofmt + goimports  
+- **Security**: gosec vulnerability scanning, SonarQube integration
 - **Documentation**: godoc for all public APIs
+- **CI/CD**: GitHub Actions with automated staging, manual production deployment
+- **Testing**: Critical tests (<2min), comprehensive tests, integration & E2E
+- **Deployment**: Rolling updates with blue-green capability
 
 ## 🚀 Deployment
 
@@ -264,6 +283,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - [ ] Price prediction ML models  
 - [ ] B2B API monetization
 - [ ] Multi-category expansion
+- [ ] Enhanced MCP tools for complex price analysis
+- [ ] AI-powered product recommendations via MCP
 
 ---
 

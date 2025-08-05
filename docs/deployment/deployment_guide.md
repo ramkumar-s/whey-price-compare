@@ -118,10 +118,53 @@ METRICS_PORT=9090
 JAEGER_ENDPOINT=http://jaeger:14268/api/traces
 PROMETHEUS_ENDPOINT=http://prometheus:9090
 
-# Security
-JWT_SECRET=very_long_random_jwt_secret_here
+# MCP Server Configuration
+MCP_PORT=8081
+MCP_LOG_LEVEL=info
+MCP_TIMEOUT=30s
+MCP_MAX_CONNECTIONS=100
+
+# Authentication Configuration
+JWT_SECRET=very_long_random_jwt_secret_64_characters_minimum_for_security
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_EXPIRY=7d
+
+# OAuth Configuration
+OAUTH_GOOGLE_CLIENT_ID=google_oauth_client_id_here
+OAUTH_GOOGLE_CLIENT_SECRET=google_oauth_client_secret_here
+OAUTH_GITHUB_CLIENT_ID=github_oauth_client_id_here
+OAUTH_GITHUB_CLIENT_SECRET=github_oauth_client_secret_here
+OAUTH_FACEBOOK_CLIENT_ID=facebook_oauth_client_id_here
+OAUTH_FACEBOOK_CLIENT_SECRET=facebook_oauth_client_secret_here
+
+# Encryption Configuration
+ENCRYPTION_MASTER_KEY=32_byte_master_encryption_key_for_pii_data_protection
+ENCRYPTION_KEY_ROTATION_DAYS=90
+
+# GDPR Configuration
+GDPR_DATA_RETENTION_DAYS=2555  # 7 years default
+GDPR_EXPORT_EXPIRY_HOURS=72
+GDPR_DELETION_DELAY_DAYS=30
+
+# Email Configuration
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USERNAME=apikey
+SMTP_PASSWORD=sendgrid_api_key_here
+FROM_EMAIL=noreply@proteinprices.com
+
+# Notification Configuration
+PUSH_NOTIFICATION_ENABLED=false
+SMS_ENABLED=false
+EMAIL_NOTIFICATIONS_ENABLED=true
+
+# Rate Limiting Configuration
 RATE_LIMIT_ENABLED=true
-RATE_LIMIT_RPS=100
+RATE_LIMIT_PUBLIC_RPS=100
+RATE_LIMIT_USER_RPS=1000
+RATE_LIMIT_API_FREE_RPS=1000
+RATE_LIMIT_API_DEVELOPER_RPS=10000
+RATE_LIMIT_ADMIN_RPS=5000
 
 # Scraping Configuration
 SCRAPER_USER_AGENT=Mozilla/5.0 (compatible; ProteinPriceBot/1.0)
@@ -221,6 +264,31 @@ services:
           memory: 256M
           cpus: '0.3'
 
+  mcp:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.mcp
+      target: production
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      - MCP_PORT=8081
+      - MCP_LOG_LEVEL=info
+    env_file:
+      - .env.prod
+    depends_on:
+      - api
+      - postgres
+      - redis
+    volumes:
+      - ./logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+
   postgres:
     image: postgres:15-alpine
     restart: unless-stopped
@@ -317,6 +385,7 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - api
+      - mcp
 
 volumes:
   postgres_data:
@@ -500,6 +569,29 @@ server {
     location /health {
         proxy_pass http://127.0.0.1:8080;
         access_log off;
+    }
+
+    # MCP server endpoint (for AI integrations)
+    location /mcp/ {
+        allow 127.0.0.1;
+        allow 10.0.0.0/8;
+        allow 172.16.0.0/12;
+        allow 192.168.0.0/16;
+        deny all;
+        
+        proxy_pass http://127.0.0.1:8081;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # MCP-specific timeouts
+        proxy_connect_timeout 10s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
     }
 
     # Main application
@@ -689,6 +781,9 @@ restart-api:
 restart-scraper:
 	docker-compose -f docker-compose.prod.yml restart scraper
 
+restart-mcp:
+	docker-compose -f docker-compose.prod.yml restart mcp
+
 update:
 	git pull origin main
 	$(MAKE) build-prod
@@ -867,6 +962,11 @@ scrape_configs:
   - job_name: 'scraper'
     static_configs:
       - targets: ['scraper:9091']
+    scrape_interval: 30s
+
+  - job_name: 'mcp-server'
+    static_configs:
+      - targets: ['mcp:9092']
     scrape_interval: 30s
 
   - job_name: 'postgres'

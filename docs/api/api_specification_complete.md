@@ -124,10 +124,395 @@ RESTful API for the Whey Protein Price Comparison Platform. All endpoints are op
 
 ## Authentication
 
-Currently, all endpoints are public and require no authentication. Future versions will include:
-- API key authentication for B2B partners
-- Rate limiting based on API keys
-- Premium endpoints for advanced features
+The API supports multiple authentication methods based on the endpoint tier:
+
+### Authentication Methods
+
+#### 1. No Authentication (Public Endpoints)
+**Usage**: Basic price comparison functionality
+**Rate Limit**: 100 requests/hour per IP
+
+#### 2. JWT Bearer Tokens (User Endpoints)
+**Usage**: User-specific features (alerts, favorites, recommendations)
+**Format**: `Authorization: Bearer <jwt_token>`
+**Rate Limit**: 1000 requests/hour per user
+
+#### 3. API Keys (B2B Endpoints)
+**Usage**: High-volume API access for developers/businesses
+**Format**: `X-API-Key: <api_key>`
+**Tiers**: Free (1K/hour), Developer ($29/month, 10K/hour), Enterprise (100K/hour)
+
+#### 4. Admin Authentication (Admin Endpoints)
+**Usage**: Platform administration
+**Requirements**: JWT + MFA verification
+**Rate Limit**: 5000 requests/hour
+
+### Authentication Endpoints
+
+#### User Registration
+**Endpoint**: `POST /api/auth/register`
+
+**Request**:
+```json
+{
+  "email": "user@example.com",
+  "password": "SecurePassword123!",
+  "name": "John Doe",
+  "consent_marketing": false,
+  "consent_analytics": true
+}
+```
+
+**Response**: `201 Created`
+```json
+{
+  "user": {
+    "id": "usr_123456789",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "email_verified": false,
+    "created_at": "2024-01-15T10:30:00Z"
+  },
+  "message": "Registration successful. Please check your email for verification."
+}
+```
+
+#### User Login
+**Endpoint**: `POST /api/auth/login`
+
+**Request**:
+```json
+{
+  "email": "user@example.com",
+  "password": "SecurePassword123!"
+}
+```
+
+**Response**: `200 OK`
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "user": {
+    "id": "usr_123456789",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "roles": ["user"],
+    "email_verified": true
+  }
+}
+```
+
+#### OAuth Login
+**Endpoint**: `GET /api/auth/oauth/{provider}`
+**Providers**: `google`, `github`, `facebook`
+
+**Flow**:
+1. `GET /api/auth/oauth/google` → Redirects to Google OAuth
+2. User authorizes application
+3. `GET /api/auth/oauth/google/callback?code=xyz` → Processes OAuth callback
+4. Returns JWT tokens or redirects to frontend with tokens
+
+#### Token Refresh
+**Endpoint**: `POST /api/auth/refresh`
+
+**Headers**: Refresh token in httpOnly cookie
+**Response**: `200 OK`
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "Bearer",
+  "expires_in": 900
+}
+```
+
+#### Logout
+**Endpoint**: `POST /api/auth/logout`
+**Headers**: `Authorization: Bearer <token>`
+**Response**: `200 OK`
+```json
+{
+  "message": "Logged out successfully"
+}
+```
+
+### Protected Endpoints
+
+#### Get User Profile
+**Endpoint**: `GET /api/user/profile`
+**Authentication**: JWT Bearer token required
+
+**Response**: `200 OK`
+```json
+{
+  "user": {
+    "id": "usr_123456789",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "avatar_url": "https://cdn.proteinprices.com/avatars/usr_123456789.jpg",
+    "preferences": {
+      "currency": "INR",
+      "notifications": {
+        "price_alerts": true,
+        "recommendations": false,
+        "marketing": false
+      }
+    },
+    "subscription": {
+      "tier": "user",
+      "api_requests_used": 150,
+      "api_requests_limit": 1000
+    },
+    "created_at": "2024-01-15T10:30:00Z",
+    "last_login_at": "2024-01-16T09:15:00Z"
+  }
+}
+```
+
+#### Create Price Alert
+**Endpoint**: `POST /api/user/alerts`
+**Authentication**: JWT Bearer token required
+
+**Request**:
+```json
+{
+  "product_id": "prod_123",
+  "target_price": 2999.00,
+  "retailer_ids": ["amazon", "flipkart"],
+  "notification_methods": ["email", "push"]
+}
+```
+
+**Response**: `201 Created`
+```json
+{
+  "alert": {
+    "id": "alert_789",
+    "product_id": "prod_123",
+    "product_name": "Optimum Nutrition Gold Standard Whey",
+    "target_price": 2999.00,
+    "current_min_price": 3199.00,
+    "retailer_ids": ["amazon", "flipkart"],
+    "is_active": true,
+    "created_at": "2024-01-15T14:30:00Z"
+  }
+}
+```
+
+#### Get User Favorites
+**Endpoint**: `GET /api/user/favorites`
+**Authentication**: JWT Bearer token required
+
+**Response**: `200 OK`
+```json
+{
+  "favorites": [
+    {
+      "id": "fav_456",
+      "product": {
+        "id": "prod_123",
+        "name": "Optimum Nutrition Gold Standard Whey",
+        "brand": "Optimum Nutrition",
+        "image_url": "https://cdn.proteinprices.com/products/on-gold-standard.jpg",
+        "current_min_price": 3199.00,
+        "price_trend": "down"
+      },
+      "added_at": "2024-01-10T12:00:00Z"
+    }
+  ],
+  "total_count": 12
+}
+```
+
+#### Get Personalized Recommendations
+**Endpoint**: `GET /api/user/recommendations`
+**Authentication**: JWT Bearer token required
+
+**Parameters**:
+- `type` (optional): `similar`, `trending`, `deals` (default: `mixed`)
+- `limit` (optional): Number of recommendations (default: 10, max: 50)
+
+**Response**: `200 OK`
+```json
+{
+  "recommendations": [
+    {
+      "type": "similar_to_favorites",
+      "reason": "Based on your favorite Optimum Nutrition products",
+      "products": [
+        {
+          "id": "prod_456",
+          "name": "Optimum Nutrition BCAA",
+          "brand": "Optimum Nutrition",
+          "confidence_score": 0.92,
+          "current_min_price": 1899.00,
+          "discount_percent": 15.5
+        }
+      ]
+    },
+    {
+      "type": "trending",
+      "reason": "Popular among users with similar preferences",
+      "products": [
+        {
+          "id": "prod_789",
+          "name": "MuscleBlaze Whey Protein",
+          "brand": "MuscleBlaze",
+          "confidence_score": 0.78,
+          "current_min_price": 2299.00,
+          "price_trend": "down"
+        }
+      ]
+    }
+  ],
+  "generated_at": "2024-01-15T14:30:00Z",
+  "expires_at": "2024-01-15T16:30:00Z"
+}
+```
+
+### API Key Management
+
+#### Generate API Key
+**Endpoint**: `POST /api/user/api-keys`
+**Authentication**: JWT Bearer token required
+
+**Request**:
+```json
+{
+  "name": "My App Integration",
+  "tier": "free",
+  "description": "Integration for my fitness tracking app"
+}
+```
+
+**Response**: `201 Created`
+```json
+{
+  "api_key": {
+    "id": "key_abc123",
+    "name": "My App Integration",
+    "key": "ppk_live_1234567890abcdef",
+    "tier": "free",
+    "rate_limit_per_hour": 1000,
+    "created_at": "2024-01-15T14:30:00Z",
+    "expires_at": null
+  },
+  "warning": "Store this key securely. It won't be shown again."
+}
+```
+
+#### List API Keys
+**Endpoint**: `GET /api/user/api-keys`
+**Authentication**: JWT Bearer token required
+
+**Response**: `200 OK`
+```json
+{
+  "api_keys": [
+    {
+      "id": "key_abc123",
+      "name": "My App Integration",
+      "key_preview": "ppk_live_1234...cdef",
+      "tier": "free",
+      "rate_limit_per_hour": 1000,
+      "usage_last_24h": 145,
+      "last_used_at": "2024-01-15T13:45:00Z",
+      "created_at": "2024-01-15T14:30:00Z",
+      "is_active": true
+    }
+  ]
+}
+```
+
+### Admin Endpoints
+
+#### Get Platform Analytics
+**Endpoint**: `GET /api/admin/analytics`
+**Authentication**: JWT Bearer token + Admin role
+
+**Parameters**:
+- `period` (optional): `24h`, `7d`, `30d`, `90d` (default: `7d`)
+- `metrics` (optional): Comma-separated list of metrics
+
+**Response**: `200 OK`
+```json
+{
+  "period": "7d",
+  "metrics": {
+    "users": {
+      "total": 15420,
+      "new_registrations": 234,
+      "active_users": 8932,
+      "retention_rate": 0.76
+    },
+    "api_usage": {
+      "total_requests": 2340000,
+      "requests_by_tier": {
+        "public": 1200000,
+        "user": 890000,
+        "api_free": 180000,
+        "api_developer": 70000
+      },
+      "average_response_time": 42.3
+    },
+    "features": {
+      "price_alerts_created": 1234,
+      "favorites_added": 5678,
+      "oauth_logins": {
+        "google": 890,
+        "github": 123,
+        "facebook": 456
+      }
+    },
+    "revenue": {
+      "api_subscriptions": {
+        "developer_tier": 2940,
+        "enterprise_tier": 15600
+      },
+      "affiliate_commissions": 8750.50
+    }
+  },
+  "generated_at": "2024-01-15T14:30:00Z"
+}
+```
+
+#### Manage Users
+**Endpoint**: `GET /api/admin/users`
+**Authentication**: JWT Bearer token + Admin role
+
+**Parameters**:
+- `page` (optional): Page number (default: 1)
+- `per_page` (optional): Results per page (default: 50, max: 100)
+- `status` (optional): `active`, `inactive`, `suspended`
+- `tier` (optional): User tier filter
+- `search` (optional): Search by email or name
+
+**Response**: `200 OK`
+```json
+{
+  "users": [
+    {
+      "id": "usr_123456789",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "tier": "user",
+      "status": "active",
+      "email_verified": true,
+      "last_login_at": "2024-01-15T13:45:00Z",
+      "created_at": "2024-01-10T10:30:00Z",
+      "api_usage_24h": 145,
+      "gdpr_requests": 0
+    }
+  ],
+  "pagination": {
+    "total_count": 15420,
+    "page": 1,
+    "per_page": 50,
+    "total_pages": 309
+  }
+}
+```
 
 ## Endpoints
 
@@ -580,7 +965,181 @@ GET /products/search?q=whey%20protein&brand=optimum%20nutrition&sort=price_asc&p
 }
 ```
 
-### 10. API Metrics
+### 10. MCP Server Integration
+
+**Endpoint**: `GET /mcp/capabilities`
+
+**Description**: Get MCP server capabilities and available tools for AI integrations
+
+**Access**: MCP clients only (requires MCP protocol handshake)
+
+**Response**: `200 OK`
+```json
+{
+  "capabilities": {
+    "tools": {
+      "listChanged": true
+    },
+    "resources": {
+      "subscribe": true,
+      "listChanged": true
+    },
+    "prompts": {
+      "listChanged": true
+    }
+  },
+  "serverInfo": {
+    "name": "whey-protein-mcp-server",
+    "version": "1.0.0",
+    "description": "MCP server for whey protein price comparison platform",
+    "homepage": "https://proteinprices.com/mcp"
+  },
+  "tools": [
+    {
+      "name": "search_products",
+      "description": "Search for whey protein products with advanced filtering",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {"type": "string", "description": "Search query"},
+          "brand": {"type": "string", "description": "Filter by brand"},
+          "min_price": {"type": "number", "description": "Minimum price"},
+          "max_price": {"type": "number", "description": "Maximum price"},
+          "sort": {"type": "string", "enum": ["price_asc", "price_desc", "name_asc"]}
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "compare_products",
+      "description": "Compare multiple products side by side",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "product_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Array of product IDs to compare",
+            "minItems": 2,
+            "maxItems": 5
+          }
+        },
+        "required": ["product_ids"]
+      }
+    },
+    {
+      "name": "get_price_history",
+      "description": "Get historical price data for a product",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "product_id": {"type": "string", "description": "Product ID"},
+          "days": {"type": "number", "description": "Number of days of history", "default": 30, "maximum": 365},
+          "retailer": {"type": "string", "description": "Optional retailer filter"}
+        },
+        "required": ["product_id"]
+      }
+    },
+    {
+      "name": "find_best_deals",
+      "description": "Find current best deals and discounts",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "min_discount": {"type": "number", "description": "Minimum discount percentage", "default": 10},
+          "brand": {"type": "string", "description": "Filter by brand"},
+          "max_price": {"type": "number", "description": "Maximum price limit"},
+          "limit": {"type": "number", "description": "Number of deals to return", "default": 10, "maximum": 50}
+        }
+      }
+    },
+    {
+      "name": "analyze_price_trends",
+      "description": "Analyze price trends and patterns for a product",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "product_id": {"type": "string", "description": "Product ID"},
+          "analysis_period": {"type": "string", "enum": ["30d", "90d", "180d", "1y"], "default": "90d"}
+        },
+        "required": ["product_id"]
+      }
+    },
+    {
+      "name": "get_nutrition_comparison",
+      "description": "Compare nutritional information across products",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "product_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Array of product IDs to compare nutritionally",
+            "minItems": 2,
+            "maxItems": 5
+          }
+        },
+        "required": ["product_ids"]
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "product://live-prices",
+      "name": "Live Price Feed",
+      "description": "Real-time price updates for all products",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "product://catalog",
+      "name": "Product Catalog",
+      "description": "Complete product database with metadata",
+      "mimeType": "application/json"
+    }
+  ]
+}
+```
+
+**MCP Tool Response Format**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Found 15 whey protein products matching your criteria..."
+    },
+    {
+      "type": "text",
+      "text": "| Product | Brand | Price | Discount |\n|---------|-------|-------|----------|\n| ON Gold Standard | Optimum Nutrition | ₹3,199 | 20% |"
+    }
+  ],
+  "isError": false,
+  "meta": {
+    "query_time_ms": 45,
+    "cache_hit": true,
+    "total_results": 15
+  }
+}
+```
+
+**MCP Error Response**:
+```json
+{
+  "content": [
+    {
+      "type": "text", 
+      "text": "Error: Product ID 'invalid_id' not found. Please check the product ID format."
+    }
+  ],
+  "isError": true,
+  "meta": {
+    "error_code": "PRODUCT_NOT_FOUND",
+    "suggestions": ["Use search_products tool to find valid product IDs"]
+  }
+}
+```
+
+### 11. API Metrics
 
 **Endpoint**: `GET /metrics`
 
@@ -659,6 +1218,7 @@ X-RateLimit-Policy: sliding-window
 | `/brands` | 1000/hour | 1 hour | 50 |
 | `/retailers` | 1000/hour | 1 hour | 50 |
 | `/deals` | 100/min | 1 minute | 10 |
+| `/mcp/capabilities` | 100/hour | 1 hour | 10 |
 | `/health` | No limit | - | - |
 
 ## Caching Strategy
@@ -674,6 +1234,7 @@ X-RateLimit-Policy: sliding-window
 | `/brands` | `public, max-age=86400` | 24 hours | Yes | Accept-Encoding |
 | `/retailers` | `public, max-age=43200` | 12 hours | Yes | Accept-Encoding |
 | `/deals` | `public, max-age=600` | 10 minutes | Yes | Accept-Encoding |
+| `/mcp/capabilities` | `private, max-age=3600` | 1 hour | Yes | Accept-Encoding |
 
 ### ETags and Conditional Requests
 
