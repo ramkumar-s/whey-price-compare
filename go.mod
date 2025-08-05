@@ -17,6 +17,11 @@ require (
 	github.com/prometheus/client_golang v1.17.0
 	gorm.io/gorm v1.25.5
 	gorm.io/driver/postgres v1.5.4
+	gorm.io/driver/sqlite v1.5.4
+	modernc.org/sqlite v1.27.0
+	github.com/golang-jwt/jwt/v5 v5.2.0
+	golang.org/x/oauth2 v0.15.0
+	github.com/stripe/stripe-go/v76 v76.16.0
 )
 
 require (

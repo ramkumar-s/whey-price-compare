@@ -21,11 +21,15 @@ dev-logs: ## Show development logs
 build: ## Build all services
 	go build -o bin/api ./cmd/api
 	go build -o bin/scraper ./cmd/scraper
+	go build -o bin/mcp ./cmd/mcp
 
 build-prod: ## Build production Docker images
 	docker-compose -f docker-compose.prod.yml build --no-cache
 
 # Testing
+test-critical: ## Run critical tests (fast feedback)
+	go test -v -race -short -tags=critical ./internal/... ./pkg/...
+
 test-unit: ## Run unit tests
 	go test -v -race -coverprofile=coverage.out ./internal/...
 	go test -v -race -coverprofile=coverage.out ./pkg/...
@@ -60,16 +64,35 @@ security: ## Run security checks
 
 # Database
 migrate-up: ## Run database migrations
-	go run cmd/migrate/main.go up
+	docker-compose -f docker-compose.dev.yml exec api /app/migrate up
+
+migrate-up-test: ## Run database migrations for testing
+	docker-compose -f docker-compose.test.yml exec api /app/migrate up
 
 migrate-down: ## Rollback database migrations
-	go run cmd/migrate/main.go down
+	docker-compose -f docker-compose.dev.yml exec api /app/migrate down
 
 migrate-create: ## Create new migration (usage: make migrate-create name=migration_name)
-	go run cmd/migrate/main.go create $(name)
+	docker-compose -f docker-compose.dev.yml exec api /app/migrate create $(name)
 
 seed: ## Seed database with test data
 	go run cmd/seed/main.go
+
+# SQLite Development Database
+setup-sqlite: ## Setup SQLite database for local development
+	mkdir -p data/sqlite
+	sqlite3 data/sqlite/dev.db < deployments/sqlite/schema.sql
+	@echo "SQLite development database created at data/sqlite/dev.db"
+
+sqlite-shell: ## Open SQLite shell for development database
+	sqlite3 data/sqlite/dev.db
+
+sqlite-backup: ## Backup SQLite development database
+	cp data/sqlite/dev.db data/sqlite/dev_backup_$(shell date +%Y%m%d_%H%M%S).db
+
+sqlite-reset: ## Reset SQLite development database
+	rm -f data/sqlite/dev.db
+	$(MAKE) setup-sqlite
 
 # Services
 run-api: ## Run API server
@@ -77,6 +100,9 @@ run-api: ## Run API server
 
 run-scraper: ## Run scraper service
 	go run cmd/scraper/main.go
+
+run-mcp: ## Run MCP server
+	go run cmd/mcp/main.go
 
 # Deployment
 deploy-staging: ## Deploy to staging
