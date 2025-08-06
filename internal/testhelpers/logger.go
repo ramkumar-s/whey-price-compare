@@ -11,35 +11,35 @@ import (
 // This function MUST be used in all test files to ensure logs are visible to AI assistants
 func SetupTestLogger(t *testing.T) *zap.Logger {
 	config := zap.NewDevelopmentConfig()
-	
+
 	// Always use debug level for comprehensive test logging
 	config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	
+
 	// Output to stdout for Claude Code visibility (CRITICAL)
 	config.OutputPaths = []string{"stdout"}
 	config.ErrorOutputPaths = []string{"stderr"}
-	
+
 	// Use console encoding for human-readable logs in tests
 	config.Encoding = "console"
 	config.EncoderConfig.TimeKey = "time"
 	config.EncoderConfig.LevelKey = "level"
 	config.EncoderConfig.MessageKey = "msg"
 	config.EncoderConfig.CallerKey = "caller"
-	
+
 	// Enable caller information for debugging
 	config.DisableCaller = false
 	config.DisableStacktrace = false
-	
+
 	logger, err := config.Build()
 	if err != nil {
 		t.Fatalf("Failed to create test logger: %v", err)
 	}
-	
+
 	// Ensure logs are flushed when test completes
 	t.Cleanup(func() {
 		logger.Sync()
 	})
-	
+
 	return logger
 }
 
@@ -50,16 +50,16 @@ func SetupTestLoggerWithLevel(t *testing.T, level zapcore.Level) *zap.Logger {
 	config.OutputPaths = []string{"stdout"}
 	config.ErrorOutputPaths = []string{"stderr"}
 	config.Encoding = "console"
-	
+
 	logger, err := config.Build()
 	if err != nil {
 		t.Fatalf("Failed to create test logger: %v", err)
 	}
-	
+
 	t.Cleanup(func() {
 		logger.Sync()
 	})
-	
+
 	return logger
 }
 
@@ -135,7 +135,7 @@ func LogPerformanceMetric(logger *zap.Logger, metric string, value interface{}, 
 	if !passed {
 		status = "❌"
 	}
-	
+
 	logger.Info("⚡ Performance metric",
 		zap.String("status", status),
 		zap.String("metric", metric),
@@ -170,7 +170,7 @@ func LogScraperOperation(logger *zap.Logger, retailer, productID string, success
 	if !success {
 		status = "❌"
 	}
-	
+
 	logger.Debug("🕷️ Scraper operation",
 		zap.String("status", status),
 		zap.String("retailer", retailer),
@@ -185,23 +185,23 @@ func LogScraperOperation(logger *zap.Logger, retailer, productID string, success
 func TestExample(t *testing.T) {
     logger := testhelpers.SetupTestLogger(t)
     testhelpers.LogTestStart(logger, "TestExample", "internal/service")
-    
+
     // Test setup
     testhelpers.LogTestSetup(logger, map[string]interface{}{
         "mock_data": "product_123",
         "database": "sqlite",
     })
-    
+
     // Test steps
     testhelpers.LogTestStep(logger, "arrange", "Setting up mocks and test data")
     // ... test logic
-    
+
     testhelpers.LogTestStep(logger, "act", "Executing service method")
     // ... test execution
-    
+
     testhelpers.LogTestStep(logger, "assert", "Validating results")
     // ... assertions
-    
+
     testhelpers.LogTestComplete(logger, "TestExample", true)
 }
 */
