@@ -192,6 +192,112 @@ GitHub Actions Pipeline:
 3. **Resource Exhaustion**: Monitor and optimize resource usage
 4. **Deployment Delays**: Identify bottlenecks in deployment pipeline
 
+## Progressive CI/CD Workflow System
+
+### Sprint-Based Workflows
+The CI/CD system uses progressive workflows aligned with development sprints:
+
+#### `ci-sprint-1.yml` - Foundation MVP
+**When to Enable**: Immediately (already active)
+**Scope**: Database foundation, basic API structure, <14KB validation
+**Tests**: Foundation components, SQLite connectivity, bundle size
+**Purpose**: Validates basic project structure and requirements
+
+#### `ci-sprint-2.yml` - Authentication & Enhanced Features  
+**When to Enable**: After implementing authentication system
+**Required Components**:
+- `internal/auth/` - JWT authentication implementation
+- `internal/users/` - User management system
+- `internal/alerts/` - Price alerts functionality
+- `internal/scrapers/healthkart/` - HealthKart scraper
+- `internal/scrapers/nutrabay/` - Nutrabay scraper
+
+#### `ci-sprint-3.yml` - User Experience & Data Quality
+**When to Enable**: After implementing user features and data quality
+**Required Components**:
+- `internal/favorites/` - User favorites system
+- `internal/recommendations/` - Recommendation engine
+- `internal/validation/` - Price validation rules
+- `internal/scoring/` - Confidence scoring system
+- `internal/search/` - Enhanced search with filters
+
+#### `ci-sprint-4.yml` - API Excellence & MCP Integration
+**When to Enable**: After implementing B2B API and MCP server
+**Required Components**:
+- `cmd/mcp/` - MCP server binary
+- `internal/apikeys/` - API key management
+- `internal/ratelimit/` - Tiered rate limiting
+- `internal/mcp/` - MCP protocol implementation
+- `internal/cache/` - Advanced caching strategy
+
+### Workflow Activation Guide
+
+#### Step 1: Foundation (Use ci-sprint-1.yml)
+```bash
+# Already active - validates basic structure
+git push origin main
+```
+
+#### Step 2: Enable Sprint 2 Workflow
+```bash
+# After implementing auth components, rename workflow
+mv .github/workflows/ci-sprint-1.yml .github/workflows/ci-sprint-1-inactive.yml
+mv .github/workflows/ci-sprint-2.yml .github/workflows/ci-active.yml
+git add -A && git commit -m "Enable Sprint 2 CI workflow"
+```
+
+#### Step 3: Enable Sprint 3 Workflow
+```bash
+# After implementing user features and data quality
+mv .github/workflows/ci-active.yml .github/workflows/ci-sprint-2-inactive.yml
+mv .github/workflows/ci-sprint-3.yml .github/workflows/ci-active.yml
+git add -A && git commit -m "Enable Sprint 3 CI workflow"
+```
+
+#### Step 4: Enable Sprint 4 Workflow
+```bash
+# After implementing MCP server and B2B API
+mv .github/workflows/ci-active.yml .github/workflows/ci-sprint-3-inactive.yml
+mv .github/workflows/ci-sprint-4.yml .github/workflows/ci-active.yml
+git add -A && git commit -m "Enable Sprint 4 CI workflow"
+```
+
+#### Step 5: Enable Production Workflow
+```bash
+# After completing Sprint 4, switch to full production CI
+mv .github/workflows/ci-active.yml .github/workflows/ci-sprint-4-inactive.yml
+mv .github/workflows/ci-new.yml .github/workflows/ci.yml
+git add -A && git commit -m "Enable production CI workflow"
+```
+
+### Workflow Status Monitoring
+
+Each sprint workflow provides status summaries showing:
+- ✅ **Completed components** (implemented and tested)
+- ⏳ **Pending components** (need implementation)
+- **Next steps** for the current sprint
+- **Foundation status** (dependencies ready)
+
+### Troubleshooting Progressive Workflows
+
+#### Common Issues
+1. **Workflow doesn't trigger**: Check file paths in `on.push.paths`
+2. **Tests fail for missing components**: Component not implemented yet (expected)
+3. **Bundle size fails**: Frontend exceeds 14KB limit (critical issue)
+4. **Database tests fail**: Migration or schema issues
+
+#### Quick Fixes
+```bash
+# Check which workflow is active
+ls -la .github/workflows/ci-*.yml
+
+# Validate workflow syntax
+act --list
+
+# Test specific job locally
+act -j foundation-tests
+```
+
 ## Best Practices for AI Assistants
 
 ### When Modifying Workflows
@@ -199,6 +305,13 @@ GitHub Actions Pipeline:
 2. **Incremental Changes**: Make small, testable changes
 3. **Documentation**: Update this file when making workflow changes
 4. **Monitoring**: Monitor workflow performance after changes
+5. **Sprint Alignment**: Ensure tests match implemented components
+
+### Progressive Development Guidelines
+- **Only Test What Exists**: Don't test unimplemented components
+- **Clear Status Reporting**: Show what's done vs. what's needed
+- **Bundle Size Focus**: Always enforce <14KB requirement
+- **Performance Validation**: Include performance benchmarks in each sprint
 
 ### Common Workflow Patterns
 - **Environment Variables**: Use for configuration, not secrets

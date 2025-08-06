@@ -32,11 +32,25 @@ Ultra-fast (<14KB, <500ms) whey protein price comparison platform built with Go 
 - **Code Quality**: 80% test coverage, golangci-lint, gosec, SonarCloud
 
 ## Current Sprint Status
+**Active Workflow**: `ci-sprint-1.yml` (Foundation MVP)
+
 Check `docs/project/project_plan.md` for detailed sprint breakdown:
-- **Sprint 1-2**: Foundation MVP (database, API, scraping, <14KB frontend)
-- **Sprint 3-4**: User features, OAuth, alerts, 4 retailers, MCP server
+- **Sprint 1** (Active): Foundation MVP (database, API, scraping, <14KB frontend)
+- **Sprint 2**: Authentication & enhanced scraping (4 retailers, price alerts)
+- **Sprint 3**: User features (favorites, recommendations, data quality)
+- **Sprint 4**: API excellence & MCP integration (B2B API, AI tools)
 - **Sprint 5-6**: Monitoring, CI/CD, production deployment
 - **Sprint 7-8**: Optimization, advanced features, launch prep
+
+### Progressive CI/CD System
+The project uses sprint-based CI workflows that only test implemented components:
+- `ci-sprint-1.yml` - Foundation testing (currently active)
+- `ci-sprint-2.yml` - Authentication & enhanced features  
+- `ci-sprint-3.yml` - User experience & data quality
+- `ci-sprint-4.yml` - API excellence & MCP integration
+- `ci-new.yml` - Full production workflow (Sprint 5+)
+
+**Workflow Activation**: See `.github/CLAUDE.md` for step-by-step activation guide
 
 ## Important File Locations
 - **Database Schemas**: `deployments/postgres/migrations/` and `deployments/sqlite/`

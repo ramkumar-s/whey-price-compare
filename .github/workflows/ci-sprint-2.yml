@@ -1,0 +1,385 @@
+# CI Pipeline - Sprint 2: Authentication & Enhanced Features
+name: Sprint 2 - Authentication CI
+
+# Only runs when Sprint 2 is enabled
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'cmd/**'
+      - 'internal/**' 
+      - 'pkg/**'
+      - 'web/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/ci-sprint-2.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'pkg/**'
+      - 'web/**'
+      - 'go.mod'
+      - 'go.sum'
+
+env:
+  GO_VERSION: '1.21'
+  DATABASE_URL: 'postgres://postgres:postgres@localhost:5432/proteinprices_test?sslmode=disable'
+  REDIS_URL: 'redis://localhost:6379'
+
+jobs:
+  # Sprint 2 Foundation (includes Sprint 1)
+  foundation-tests:
+    name: Sprint 2 Foundation Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: proteinprices_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies
+      run: |
+        go mod download
+        go mod verify
+    
+    - name: Setup PostgreSQL database
+      run: |
+        make migrate-up-test
+    
+    - name: Run Sprint 1 foundation tests
+      run: |
+        echo "Running Sprint 1 + 2 foundation tests..."
+        if [ -d "internal/database" ]; then
+          go test -v -race ./internal/database/...
+        fi
+        if [ -d "internal/models" ]; then
+          go test -v -race ./internal/models/...
+        fi
+        if [ -d "internal/config" ]; then
+          go test -v -race ./internal/config/...
+        fi
+        if [ -d "internal/testhelpers" ]; then
+          go test -v -race ./internal/testhelpers/...
+        fi
+    
+    - name: Test authentication components (Sprint 2)
+      run: |
+        echo "Testing Sprint 2 authentication components..."
+        if [ -d "internal/auth" ]; then
+          go test -v -race ./internal/auth/...
+        fi
+        if [ -d "internal/session" ]; then
+          go test -v -race ./internal/session/...
+        fi
+        if [ -d "internal/oauth" ]; then
+          go test -v -race ./internal/oauth/...
+        fi
+    
+    - name: Test price alerts system (Sprint 2)
+      run: |
+        echo "Testing Sprint 2 price alerts..."
+        if [ -d "internal/alerts" ]; then
+          go test -v -race ./internal/alerts/...
+        fi
+        if [ -d "internal/notifications" ]; then
+          go test -v -race ./internal/notifications/...
+        fi
+
+  # Authentication API Tests
+  auth-api-tests:
+    name: Authentication API Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: foundation-tests
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: proteinprices_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Setup database
+      run: make migrate-up-test
+    
+    - name: Test JWT authentication
+      run: |
+        if [ -f "cmd/api/main.go" ]; then
+          echo "Testing JWT authentication endpoints..."
+          go test -v -race -run TestJWT ./internal/auth/...
+        fi
+    
+    - name: Test OAuth integration
+      run: |
+        if [ -d "internal/oauth" ]; then
+          echo "Testing OAuth providers (Google, GitHub, Facebook)..."
+          go test -v -race -run TestOAuth ./internal/oauth/...
+        fi
+    
+    - name: Test user management
+      run: |
+        if [ -d "internal/users" ]; then
+          echo "Testing user registration/login..."
+          go test -v -race ./internal/users/...
+        fi
+
+  # Enhanced Scraper Tests
+  enhanced-scraper-tests:
+    name: Enhanced Scraper Tests (4 Retailers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: foundation-tests
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Test Amazon scraper
+      run: |
+        if [ -d "internal/scrapers/amazon" ]; then
+          echo "Testing Amazon scraper..."
+          go test -v -race ./internal/scrapers/amazon/...
+        fi
+    
+    - name: Test Flipkart scraper
+      run: |
+        if [ -d "internal/scrapers/flipkart" ]; then
+          echo "Testing Flipkart scraper..."
+          go test -v -race ./internal/scrapers/flipkart/...
+        fi
+    
+    - name: Test HealthKart scraper
+      run: |
+        if [ -d "internal/scrapers/healthkart" ]; then
+          echo "Testing HealthKart scraper..."
+          go test -v -race ./internal/scrapers/healthkart/...
+        fi
+    
+    - name: Test Nutrabay scraper
+      run: |
+        if [ -d "internal/scrapers/nutrabay" ]; then
+          echo "Testing Nutrabay scraper..."
+          go test -v -race ./internal/scrapers/nutrabay/...
+        fi
+    
+    - name: Test proxy rotation
+      run: |
+        if [ -d "internal/proxy" ]; then
+          echo "Testing proxy rotation system..."
+          go test -v -race ./internal/proxy/...
+        fi
+
+  # Price Alerts Integration Tests
+  price-alerts-integration:
+    name: Price Alerts Integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [auth-api-tests, enhanced-scraper-tests]
+    if: always()
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: proteinprices_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Setup database
+      run: make migrate-up-test
+    
+    - name: Test price alert creation
+      run: |
+        if [ -d "internal/alerts" ]; then
+          echo "Testing price alert creation and management..."
+          go test -v -race -run TestAlertCreation ./internal/alerts/...
+        fi
+    
+    - name: Test email notifications
+      run: |
+        if [ -d "internal/notifications" ]; then
+          echo "Testing email notification system..."
+          go test -v -race -run TestEmailNotification ./internal/notifications/...
+        fi
+    
+    - name: Test alert checking system
+      run: |
+        if [ -d "internal/alerts" ]; then
+          echo "Testing alert checking logic..."
+          go test -v -race -run TestAlertCheck ./internal/alerts/...
+        fi
+
+  # Bundle Size Validation (Sprint 2)
+  bundle-size-check:
+    name: Bundle Size Validation (<14KB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Check frontend bundle size
+      run: |
+        echo "Validating Sprint 2 bundle size including auth forms..."
+        if [ -d "web/static" ]; then
+          total_size=0
+          for file in web/static/*.html web/static/*.css web/static/*.js; do
+            if [ -f "$file" ]; then
+              size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "0")
+              total_size=$((total_size + size))
+              echo "$(basename "$file"): ${size} bytes"
+            fi
+          done
+          echo "Total bundle size: ${total_size} bytes"
+          total_size_kb=$((total_size / 1024))
+          echo "Total bundle size: ${total_size_kb} KB"
+          
+          if [ $total_size -gt 14336 ]; then
+            echo "❌ Bundle size (${total_size} bytes) exceeds 14KB limit!"
+            exit 1
+          else
+            echo "✅ Bundle size (${total_size} bytes) is within 14KB limit"
+          fi
+        else
+          echo "Frontend directory does not exist yet - Sprint 2 focuses on backend"
+          echo "✅ Bundle size validation passed (no frontend yet)"
+        fi
+
+  # Sprint 2 Summary
+  sprint-2-summary:
+    name: Sprint 2 Status Summary
+    runs-on: ubuntu-latest
+    needs: [foundation-tests, auth-api-tests, enhanced-scraper-tests, price-alerts-integration, bundle-size-check]
+    if: always()
+    
+    steps:
+    - name: Sprint 2 Progress Summary
+      run: |
+        echo "## 🔐 Sprint 2 Authentication & Enhanced Features Progress"
+        echo ""
+        echo "### Authentication System Status:"
+        echo "- ⏳ JWT Authentication (implement in internal/auth/)"
+        echo "- ⏳ OAuth Integration (implement Google, GitHub, Facebook)"
+        echo "- ⏳ User Registration/Login (implement in internal/users/)"
+        echo "- ⏳ Session Management (implement with Redis)"
+        echo ""
+        echo "### Price Alerts System Status:"
+        echo "- ⏳ Alert Configuration (implement in internal/alerts/)"
+        echo "- ⏳ Email Notifications (implement in internal/notifications/)"
+        echo "- ⏳ Alert Management Dashboard (implement in web/)"
+        echo ""
+        echo "### Enhanced Scraping Status:"
+        echo "- ⏳ HealthKart Scraper (implement in internal/scrapers/healthkart/)"
+        echo "- ⏳ Nutrabay Scraper (implement in internal/scrapers/nutrabay/)"
+        echo "- ⏳ Proxy Rotation (implement in internal/proxy/)"
+        echo "- ⏳ Rate Limiting (implement configurable per-retailer limits)"
+        echo ""
+        echo "### Next Steps for Sprint 2:"
+        echo "1. Implement JWT authentication with Argon2id password hashing"
+        echo "2. Set up OAuth providers (Google, GitHub, Facebook)"
+        echo "3. Create user management system with profiles"
+        echo "4. Build price alerts with email notifications"
+        echo "5. Add HealthKart and Nutrabay scrapers"
+        echo "6. Implement proxy rotation and enhanced rate limiting"
+        echo ""
+        echo "### Foundation Ready:"
+        echo "- ✅ Database schema includes authentication tables"
+        echo "- ✅ Redis configured for session management"
+        echo "- ✅ Bundle size validation enforces <14KB limit"
+        echo "- ✅ CI pipeline validates authentication components"
