@@ -44,6 +44,23 @@ repos:
         name: TruffleHog Secret Scanning
         args: ["--regex", "--entropy=False", "--max_depth=3"]
         
+  # Custom security checks
+  - repo: local
+    hooks:
+      - id: credential-placeholder-check
+        name: Documentation Credential Format Check
+        entry: bash
+        language: system
+        args: ["-c", "if grep -r 'password.*=.*[a-z_]*here' docs/; then echo '❌ Use <YOUR_*_HERE> format for credentials in docs'; exit 1; fi"]
+        files: '^docs/.*\.md$'
+        
+      - id: sendgrid-placeholder-check
+        name: SendGrid Placeholder Format Check  
+        entry: bash
+        language: system
+        args: ["-c", "if grep -r 'sendgrid.*key.*here' .; then echo '❌ Update SendGrid placeholders to avoid GitGuardian alerts'; exit 1; fi"]
+        exclude: 'docs/development/security_checklist.md'
+        
   # General
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0

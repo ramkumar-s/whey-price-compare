@@ -67,6 +67,13 @@ Check `docs/project/project_plan.md` for detailed sprint breakdown:
 - **CI/CD**: `.github/workflows/` (ci-new.yml, cd-staging.yml, cd-production.yml)
 - **Configuration**: `Makefile`, `go.mod`, `docker-compose.*.yml`
 
+## Pre-Push Security Checklist (MANDATORY)
+```bash
+# ALWAYS run before git push:
+git diff --cached | grep -iE "(password|secret|key|token|credential|smtp)" || echo "✅ No credentials found"
+git log --oneline -1 | grep -iE "(password|secret|key|token|credential)" && echo "❌ Check commit message" || echo "✅ Clean commit message"
+```
+
 ## Common Commands
 ```bash
 # Development setup
@@ -100,6 +107,7 @@ make migrate-up           # Apply PostgreSQL migrations
 7. **Comprehensive Logging**: Use Uber Zap for all services and tests
 8. **No Sleep Commands**: Never use `sleep` or `wait` commands for async processes like GitHub Actions, CI/CD, or external services. Instead, prompt the user to ask for status checks after sufficient time has passed.
 9. **Go Version Requirement**: Use Go 1.22+ for development and CI/CD to ensure govulncheck vulnerability compliance (fixed GO-2025-3750, GO-2025-3447, GO-2025-3373).
+10. **Secret Safety**: MANDATORY pre-push security check - scan for credentials, API keys, passwords before committing. Use placeholder format `<YOUR_*_HERE>` in documentation.
 
 ## Logging Requirements for Claude Code
 - **Library**: Use `go.uber.org/zap` for all logging (already in go.mod)

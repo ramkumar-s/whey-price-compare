@@ -14,6 +14,7 @@ This directory contains comprehensive documentation for the whey protein price c
 - **`development/scraper_framework.md`**: User-driven scraping, anti-detection, configuration
 - **`development/local_setup.md`**: Development environment, SQLite/PostgreSQL, VSCode config
 - **`development/cicd_strategy.md`**: GitHub Actions, testing tiers, deployment pipeline
+- **`development/security_checklist.md`**: MANDATORY secret leak prevention, GitGuardian integration
 
 ### Project Management
 - **`project/project_plan.md`**: 8-sprint roadmap, measurable outcomes, dependencies, risks
@@ -40,6 +41,12 @@ All documentation emphasizes:
 - Security hardening and audit logging
 
 ## AI Assistant Guidelines for Documentation
+
+### MANDATORY Security Check (Before ANY commit)
+1. **Secret Scan**: Run `docs/development/security_checklist.md` procedures
+2. **Placeholder Format**: Use `<YOUR_*_HERE>` format for all credentials
+3. **GitGuardian Safe**: Avoid patterns that trigger false positives
+4. **Pre-commit Hooks**: Ensure security validation passes
 
 ### When Creating New Documentation
 1. **Follow Existing Patterns**: Match style, structure, and detail level

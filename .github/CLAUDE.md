@@ -123,6 +123,45 @@ The workflows are designed to gracefully handle missing implementations:
 - **Benefit**: Uses official, free, open-source gosec tool
 - **Note**: This is the correct repository for the gosec security scanner
 
+### GitGuardian Integration Notes (January 2025)
+- **Alert Resolution**: GitGuardian flagged placeholder SMTP credentials in documentation
+- **False Positive**: `SMTP_PASSWORD=sendgrid_api_key_here` was example text, not real credentials  
+- **Fix Applied**: Updated placeholder format to `<YOUR_*_HERE>` to prevent future false positives
+- **No Action Required**: No real credentials were exposed or compromised
+
+## Security Pre-Push Requirements (MANDATORY)
+
+### Secret Leak Prevention
+Before ANY git push, AI assistants MUST verify:
+
+```bash
+# 1. Check staged changes for credentials
+git diff --cached | grep -iE "(password|secret|key|token|credential|smtp|api_key)" || echo "✅ No secrets in staged files"
+
+# 2. Check commit message for credentials  
+git log --oneline -1 | grep -iE "(password|secret|key|token|credential)" && echo "❌ Credentials in commit message" || echo "✅ Clean commit message"
+
+# 3. Verify documentation uses placeholder format
+grep -r "password.*=.*[a-z_]*here" docs/ && echo "❌ Use <YOUR_*_HERE> format" || echo "✅ Proper placeholders"
+```
+
+### Documentation Standards for Credentials
+- **✅ Correct**: `API_KEY=<YOUR_API_KEY_HERE>`
+- **✅ Correct**: `PASSWORD=<YOUR_DATABASE_PASSWORD>`  
+- **❌ Wrong**: `API_KEY=your_api_key_here`
+- **❌ Wrong**: `PASSWORD=secure_password_here`
+
+### Pre-commit Hook Integration
+```yaml
+# .pre-commit-config.yaml addition needed
+- repo: https://github.com/trufflesecurity/trufflehog
+  rev: main
+  hooks:
+    - id: trufflehog
+      name: Secret Detection
+      args: ['--regex', '--entropy=False']
+```
+
 ## GitHub Actions Best Practices
 
 ### Workflow Configuration
