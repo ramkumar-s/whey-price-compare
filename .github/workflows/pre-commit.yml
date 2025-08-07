@@ -87,9 +87,25 @@ jobs:
     # Run only critical unit tests (fast feedback)
     - name: Critical unit tests
       run: |
-        go test -short -tags=critical ./internal/...
-        go test -short -tags=critical ./pkg/...
-        echo "✅ Critical unit tests passed"
+        echo "Running critical unit tests on implemented packages..."
+        
+        # Test internal packages
+        if ls internal/*/*.go >/dev/null 2>&1; then
+          go test -short -tags=critical ./internal/...
+          echo "✅ Internal package tests passed"
+        else
+          echo "⏸️  No Go files in internal/ - skipping tests"
+        fi
+        
+        # Test pkg packages (if they have Go files)
+        if find pkg/ -name "*.go" | grep -q .; then
+          go test -short -tags=critical ./pkg/...
+          echo "✅ Pkg package tests passed"
+        else
+          echo "⏸️  No Go files in pkg/ - skipping tests"
+        fi
+        
+        echo "✅ Critical unit tests completed (implemented packages only)"
 
     # Secret detection
     - name: Secret detection

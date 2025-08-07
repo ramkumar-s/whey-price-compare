@@ -128,18 +128,38 @@ jobs:
     
     strategy:
       matrix:
-        service: ${{ fromJSON(format('["{0}"]', join(split(needs.pre-deployment-validation.outputs.services_to_deploy, ','), '","'))) }}
+        include:
+          - service: api
+          - service: scraper
+          - service: mcp
       max-parallel: 1  # Deploy one service at a time
     
     steps:
+    - name: Check if service should be deployed
+      id: should-deploy
+      run: |
+        SERVICES="${{ needs.pre-deployment-validation.outputs.services_to_deploy }}"
+        SERVICE="${{ matrix.service }}"
+        
+        if [[ "$SERVICES" == *"$SERVICE"* ]] || [[ "$SERVICES" == "all" ]]; then
+          echo "deploy=true" >> $GITHUB_OUTPUT
+          echo "✅ Service $SERVICE will be deployed"
+        else
+          echo "deploy=false" >> $GITHUB_OUTPUT
+          echo "⏸️  Service $SERVICE skipped (not in deployment list: $SERVICES)"
+        fi
+    
     - uses: actions/checkout@v4
+      if: steps.should-deploy.outputs.deploy == 'true'
       with:
         ref: ${{ needs.pre-deployment-validation.outputs.deployment_sha }}
     
     - name: Set up Docker Buildx
+      if: steps.should-deploy.outputs.deploy == 'true'
       uses: docker/setup-buildx-action@v3
 
     - name: Build ${{ matrix.service }} production image
+      if: steps.should-deploy.outputs.deploy == 'true'
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -151,10 +171,12 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Save ${{ matrix.service }} image
+      if: steps.should-deploy.outputs.deploy == 'true'
       run: |
         docker save proteinprices-${{ matrix.service }}:prod-${{ needs.pre-deployment-validation.outputs.deployment_sha }} | gzip > ${{ matrix.service }}-prod.tar.gz
 
     - name: Copy image to production server
+      if: steps.should-deploy.outputs.deploy == 'true'
       uses: appleboy/scp-action@v0.1.4
       with:
         host: ${{ secrets.PRODUCTION_HOST }}
@@ -165,6 +187,7 @@ jobs:
         target: "/tmp/"
 
     - name: Deploy ${{ matrix.service }} with ${{ github.event.inputs.deployment_strategy }} strategy
+      if: steps.should-deploy.outputs.deploy == 'true'
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.PRODUCTION_HOST }}
