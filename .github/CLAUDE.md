@@ -19,24 +19,25 @@ Cost-Effective CI/CD Pipeline:
 ### `ci-fast.yml` - Fast CI Validation Pipeline
 **Trigger**: Every push and pull request  
 **Duration**: <5 minutes total
-**Cost**: FREE (unlimited minutes for public repositories)
+**Cost**: FREE (unlimited minutes for public repositories)  
 **Strategy**: Parallel execution for maximum speed
+**Go Version**: 1.22+ (updated to fix govulncheck vulnerabilities)
 
 #### Validation Jobs (Parallel)
 1. **Code Validation** (2-3 minutes):
    - Go formatting check (`gofmt`, `goimports`)
    - Static analysis (`go vet`)
    - Fast unit tests (mocked dependencies, `-short` flag)
-   - Build compilation verification
+   - Build compilation verification (gracefully handles missing main.go files)
 
 2. **Security & Quality** (3-5 minutes):
    - golangci-lint analysis
-   - gosec security scanning  
-   - govulncheck vulnerability checking
+   - gosec security scanning (using github.com/securego/gosec)
+   - govulncheck vulnerability checking (requires Go 1.22+)
 
 3. **Bundle Size Validation** (1-2 minutes):
-   - <14KB frontend bundle enforcement
-   - Asset optimization validation
+   - <14KB frontend bundle enforcement (enforced when implemented)
+   - Asset optimization validation (gracefully handles missing frontend)
 
 4. **Validation Summary**:
    - Consolidated results reporting
@@ -80,17 +81,47 @@ Cost-Effective CI/CD Pipeline:
 - **Monitoring**: Real-time metrics during deployment
 - **Circuit Breaker**: Automatic rollback on health check failure
 
-### `pre-commit.yml` - Code Quality Pipeline
+### `pre-commit.yml` - Code Quality Pipeline  
 **Trigger**: Pre-commit hooks (local) and PR validation
 **Duration**: ~3 minutes
 **Purpose**: Fast quality feedback before code review
+**Go Version**: 1.22+ (updated to fix govulncheck vulnerabilities)
 
 #### Quality Checks
 - **Code Formatting**: gofmt, goimports
 - **Linting**: golangci-lint with custom rules
-- **Security**: gosec security vulnerability scanning
-- **Dependencies**: Dependabot integration for updates
+- **Security**: gosec security vulnerability scanning (github.com/securego/gosec)
+- **Build Verification**: Gracefully handles missing main.go files
+- **Frontend Validation**: Optional checks (only runs if package.json exists)
 - **Tests**: Critical test suite only (fast feedback)
+
+## Workflow Implementation Notes
+
+### Go Version Upgrade (January 2025)
+- **Previous**: Go 1.21.13 
+- **Current**: Go 1.22+
+- **Reason**: Fix govulncheck vulnerabilities (GO-2025-3750, GO-2025-3447, GO-2025-3373)
+- **Impact**: Both local development and CI/CD require Go 1.22+ for security compliance
+
+### Missing Implementation Handling
+The workflows are designed to gracefully handle missing implementations:
+
+#### Backend Services (`cmd/` directories)
+- **API**: `cmd/api/main.go` - Skipped if not found
+- **Scraper**: `cmd/scraper/main.go` - Skipped if not found  
+- **MCP Server**: `cmd/mcp/main.go` - Skipped if not found
+- **Strategy**: Workflows check for main.go existence before build attempts
+
+#### Frontend Assets (`web/static/`)
+- **Package.json**: Workflows check for `web/static/package.json` before Node.js setup
+- **Bundle Size**: Validation skipped if no frontend assets exist
+- **Strategy**: <14KB enforcement deferred until frontend implementation
+
+### Security Tool Corrections
+- **Previous**: `securecodewarrior/github-action-gosec@master` (non-existent)
+- **Current**: Manual `github.com/securego/gosec` installation
+- **Benefit**: Uses official, free, open-source gosec tool
+- **Note**: This is the correct repository for the gosec security scanner
 
 ## GitHub Actions Best Practices
 

@@ -1,6 +1,6 @@
 module github.com/yourusername/whey-price-compare
 
-go 1.21
+go 1.22
 
 require go.uber.org/zap v1.26.0
 

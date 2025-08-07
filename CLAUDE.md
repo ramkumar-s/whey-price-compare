@@ -33,15 +33,18 @@ Ultra-fast (<14KB, <500ms) whey protein price comparison platform built with Go 
 
 ## Current CI/CD Status
 **Active Workflow**: `ci-fast.yml` (Cost-Effective Fast Validation)
+**Go Version**: 1.22+ (upgraded from 1.21 to fix govulncheck vulnerabilities)
 
 ### Cost-Effective CI/CD Strategy
 The project uses a **hybrid testing approach** that optimizes for cost and effectiveness:
 
 #### GitHub Actions (FREE - Fast Validation)
 - `ci-fast.yml` - Code quality, security, build verification (<5min)
+- `pre-commit.yml` - Fast quality feedback for development
 - `cd-staging.yml` - Staging deployment orchestration  
 - `cd-production.yml` - Production deployment with approval gates
 - **Cost**: $0 (unlimited minutes for public repositories)
+- **Implementation-Aware**: Gracefully handles missing cmd/main.go and frontend files
 
 #### Local Development (Comprehensive Testing)
 - **Integration**: `make test-integration` (real databases, Redis)
@@ -96,6 +99,7 @@ make migrate-up           # Apply PostgreSQL migrations
 6. **Sprint Awareness**: Check current sprint goals in project plan
 7. **Comprehensive Logging**: Use Uber Zap for all services and tests
 8. **No Sleep Commands**: Never use `sleep` or `wait` commands for async processes like GitHub Actions, CI/CD, or external services. Instead, prompt the user to ask for status checks after sufficient time has passed.
+9. **Go Version Requirement**: Use Go 1.22+ for development and CI/CD to ensure govulncheck vulnerability compliance (fixed GO-2025-3750, GO-2025-3447, GO-2025-3373).
 
 ## Logging Requirements for Claude Code
 - **Library**: Use `go.uber.org/zap` for all logging (already in go.mod)

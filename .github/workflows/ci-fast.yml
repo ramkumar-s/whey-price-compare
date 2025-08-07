@@ -8,7 +8,7 @@ on:
     branches: [ main ]
 
 env:
-  GO_VERSION: '1.21'
+  GO_VERSION: '1.22'
 
 jobs:
   # Fast validation - core quality gates
@@ -71,19 +71,26 @@ jobs:
     - name: Test build
       run: |
         echo "Testing build compilation..."
-        # Test that main packages can be built
+        # Test that main packages can be built (skip if not implemented yet)
         if [ -f "cmd/api/main.go" ]; then
           go build -o /tmp/api ./cmd/api
           echo "✅ API builds successfully"
+        else
+          echo "⏸️  API main.go not implemented yet - skipping build test"
         fi
         if [ -f "cmd/scraper/main.go" ]; then
           go build -o /tmp/scraper ./cmd/scraper  
           echo "✅ Scraper builds successfully"
+        else
+          echo "⏸️  Scraper main.go not implemented yet - skipping build test"
         fi
         if [ -f "cmd/mcp/main.go" ]; then
           go build -o /tmp/mcp ./cmd/mcp
           echo "✅ MCP server builds successfully"
+        else
+          echo "⏸️  MCP main.go not implemented yet - skipping build test"
         fi
+        echo "✅ Build compilation tests completed (implemented services only)"
 
   # Security and quality scanning
   security:
@@ -181,8 +188,10 @@ jobs:
             echo "   Remaining budget: ${remaining} bytes (${remaining_kb}KB)"
           fi
         else
-          echo "📁 No frontend directory found yet"
-          echo "✅ Bundle size validation passed (no frontend assets)"
+          echo "⏸️  No frontend assets implemented yet"
+          echo "📁 Expected frontend directory: web/static/"
+          echo "✅ Bundle size validation passed (no frontend assets to validate)"
+          echo "💡 Will enforce <14KB limit when frontend is implemented"
         fi
 
   # Summary and next steps
