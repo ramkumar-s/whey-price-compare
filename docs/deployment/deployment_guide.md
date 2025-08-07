@@ -100,13 +100,13 @@ DB_HOST=postgres
 DB_PORT=5432
 DB_NAME=proteinprices
 DB_USER=proteinprices
-DB_PASSWORD=<YOUR_SECURE_DATABASE_PASSWORD>
+# Set your database password using variable DB_PASSWORD
 DB_SSL_MODE=require
 
 # Redis Configuration
 REDIS_HOST=redis
 REDIS_PORT=6379
-REDIS_PASSWORD=another_secure_password
+# Set your Redis password using variable REDIS_PASSWORD
 
 # Application Configuration
 API_PORT=8080
@@ -125,20 +125,17 @@ MCP_TIMEOUT=30s
 MCP_MAX_CONNECTIONS=100
 
 # Authentication Configuration
-JWT_SECRET=very_long_random_jwt_secret_64_characters_minimum_for_security
+# Set your JWT secret using variable JWT_SECRET (64+ characters required)
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
 
-# OAuth Configuration
-OAUTH_GOOGLE_CLIENT_ID=google_oauth_client_id_here
-OAUTH_GOOGLE_CLIENT_SECRET=<YOUR_GOOGLE_CLIENT_SECRET>
-OAUTH_GITHUB_CLIENT_ID=github_oauth_client_id_here
-OAUTH_GITHUB_CLIENT_SECRET=<YOUR_GITHUB_CLIENT_SECRET>
-OAUTH_FACEBOOK_CLIENT_ID=facebook_oauth_client_id_here
-OAUTH_FACEBOOK_CLIENT_SECRET=<YOUR_FACEBOOK_CLIENT_SECRET>
+# OAuth Configuration - Set these variables for social login:
+# OAUTH_GOOGLE_CLIENT_ID and OAUTH_GOOGLE_CLIENT_SECRET
+# OAUTH_GITHUB_CLIENT_ID and OAUTH_GITHUB_CLIENT_SECRET  
+# OAUTH_FACEBOOK_CLIENT_ID and OAUTH_FACEBOOK_CLIENT_SECRET
 
 # Encryption Configuration
-ENCRYPTION_MASTER_KEY=32_byte_master_encryption_key_for_pii_data_protection
+# Set your encryption master key using variable ENCRYPTION_MASTER_KEY (32 bytes)
 ENCRYPTION_KEY_ROTATION_DAYS=90
 
 # GDPR Configuration
@@ -150,7 +147,7 @@ GDPR_DELETION_DELAY_DAYS=30
 SMTP_HOST=smtp.sendgrid.net
 SMTP_PORT=587
 SMTP_USERNAME=apikey
-SMTP_PASSWORD=<YOUR_SENDGRID_API_KEY_HERE>
+# Set your SendGrid API key using variable SMTP_PASSWORD
 FROM_EMAIL=noreply@proteinprices.com
 
 # Notification Configuration
