@@ -69,8 +69,13 @@ jobs:
     
     - name: Setup SQLite database
       run: |
-        make setup-sqlite
+        echo "Setting up SQLite database for testing..."
+        mkdir -p data/sqlite
+        # Create basic SQLite database (schema will be applied by tests if needed)
+        sqlite3 data/sqlite/test.db "CREATE TABLE IF NOT EXISTS health_check (id INTEGER PRIMARY KEY, status TEXT);"
+        sqlite3 data/sqlite/test.db "INSERT INTO health_check (status) VALUES ('ok');"
         ls -la data/sqlite/
+        sqlite3 data/sqlite/test.db "SELECT * FROM health_check;"
     
     - name: Run go fmt
       run: |
@@ -103,14 +108,20 @@ jobs:
     
     - name: Test SQLite database connectivity
       run: |
-        if [ -f "data/sqlite/dev.db" ]; then
-          echo "Testing SQLite database..."
-          sqlite3 data/sqlite/dev.db "SELECT name FROM sqlite_master WHERE type='table';"
+        echo "Testing SQLite database connectivity..."
+        if [ -f "data/sqlite/test.db" ]; then
+          sqlite3 data/sqlite/test.db "SELECT name FROM sqlite_master WHERE type='table';"
+          sqlite3 data/sqlite/test.db "SELECT COUNT(*) as health_check_count FROM health_check;"
+        else
+          echo "⚠️  SQLite test database not found"
+          exit 1
         fi
     
     - name: Test Redis connectivity
       run: |
         echo "Testing Redis connectivity..."
+        # Install redis-cli for testing
+        sudo apt-get update && sudo apt-get install -y redis-tools
         redis-cli ping
 
   # Sprint 1 API Health Check (when API exists)

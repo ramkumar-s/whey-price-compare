@@ -31,26 +31,32 @@ Ultra-fast (<14KB, <500ms) whey protein price comparison platform built with Go 
 - **CI/CD**: GitHub Actions with automated staging, manual production
 - **Code Quality**: 80% test coverage, golangci-lint, gosec, SonarCloud
 
-## Current Sprint Status
-**Active Workflow**: `ci-sprint-1.yml` (Foundation MVP)
+## Current CI/CD Status
+**Active Workflow**: `ci-fast.yml` (Cost-Effective Fast Validation)
 
+### Cost-Effective CI/CD Strategy
+The project uses a **hybrid testing approach** that optimizes for cost and effectiveness:
+
+#### GitHub Actions (FREE - Fast Validation)
+- `ci-fast.yml` - Code quality, security, build verification (<5min)
+- `cd-staging.yml` - Staging deployment orchestration  
+- `cd-production.yml` - Production deployment with approval gates
+- **Cost**: $0 (unlimited minutes for public repositories)
+
+#### Local Development (Comprehensive Testing)
+- **Integration**: `make test-integration` (real databases, Redis)
+- **End-to-End**: `make test-e2e` (browser automation, full stack)
+- **Performance**: `make test-performance` (k6 load testing)
+- **Scraping**: `make test-scraper-real` (actual API calls, rate-limited)
+
+#### Project Development Status
 Check `docs/project/project_plan.md` for detailed sprint breakdown:
-- **Sprint 1** (Active): Foundation MVP (database, API, scraping, <14KB frontend)
+- **Sprint 1**: Foundation MVP (database, API, scraping, <14KB frontend)
 - **Sprint 2**: Authentication & enhanced scraping (4 retailers, price alerts)
 - **Sprint 3**: User features (favorites, recommendations, data quality)
 - **Sprint 4**: API excellence & MCP integration (B2B API, AI tools)
 - **Sprint 5-6**: Monitoring, CI/CD, production deployment
 - **Sprint 7-8**: Optimization, advanced features, launch prep
-
-### Progressive CI/CD System
-The project uses sprint-based CI workflows that only test implemented components:
-- `ci-sprint-1.yml` - Foundation testing (currently active)
-- `ci-sprint-2.yml` - Authentication & enhanced features  
-- `ci-sprint-3.yml` - User experience & data quality
-- `ci-sprint-4.yml` - API excellence & MCP integration
-- `ci-new.yml` - Full production workflow (Sprint 5+)
-
-**Workflow Activation**: See `.github/CLAUDE.md` for step-by-step activation guide
 
 ## Important File Locations
 - **Database Schemas**: `deployments/postgres/migrations/` and `deployments/sqlite/`
@@ -65,10 +71,16 @@ make setup-sqlite          # Create SQLite dev database
 make dev                   # Start Docker development stack
 make run-api               # Run API server locally
 
-# Testing
-make test-critical         # Fast tests (<2min)
-make test-all             # Full test suite
+# Fast Testing (GitHub Actions equivalent)
+make test-critical         # Fast tests with mocked dependencies (<2min)
 make validate-bundle-size  # Check <14KB requirement
+go test -short ./...       # Quick unit tests
+
+# Comprehensive Testing (Local Development)
+make test-integration      # Real database + Redis tests (5-10min)
+make test-e2e             # Browser automation tests (10-15min)  
+make test-performance     # k6 load testing
+make test-all             # Complete local test suite
 
 # Database
 make sqlite-shell         # Open SQLite console
