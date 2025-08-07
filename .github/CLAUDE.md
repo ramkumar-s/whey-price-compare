@@ -259,13 +259,32 @@ curl -X POST "https://staging.whey-price-compare.com/api/deploy" \
 2. **Incremental Changes**: Make small, testable changes
 3. **Documentation**: Update this file when making workflow changes
 4. **Monitoring**: Monitor workflow performance after changes
-5. **Sprint Alignment**: Ensure tests match implemented components
+5. **No Sleep Commands**: Never use `sleep` or `wait` commands for GitHub Actions or CI/CD processes
 
-### Progressive Development Guidelines
+### Async Process Management
+**❌ Don't do this:**
+```bash
+git push origin main
+sleep 30 && gh run list  # BAD: Blocks execution
+```
+
+**✅ Do this instead:**
+```bash
+git push origin main
+# Ask user to check workflow status in 2-3 minutes
+```
+
+**Proper Pattern:**
+1. Trigger the async process (git push, deployment, etc.)
+2. Inform user what was triggered
+3. Ask user to request status check after appropriate time
+4. Use direct status commands when user asks
+
+### Development Guidelines
 - **Only Test What Exists**: Don't test unimplemented components
 - **Clear Status Reporting**: Show what's done vs. what's needed
 - **Bundle Size Focus**: Always enforce <14KB requirement
-- **Performance Validation**: Include performance benchmarks in each sprint
+- **Performance Validation**: Include performance benchmarks where appropriate
 
 ### Common Workflow Patterns
 - **Environment Variables**: Use for configuration, not secrets

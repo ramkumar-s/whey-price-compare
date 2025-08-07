@@ -145,7 +145,7 @@ jobs:
           echo "📁 Checking frontend files:"
           
           # Check all potential frontend files
-          for file in web/static/*.html web/static/*.css web/static/*.js web/static/dist/* 2>/dev/null; do
+          for file in web/static/*.html web/static/*.css web/static/*.js web/static/dist/*; do
             if [ -f "$file" ]; then
               size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "0")
               total_size=$((total_size + size))

@@ -37,7 +37,7 @@ func SetupTestLogger(t *testing.T) *zap.Logger {
 
 	// Ensure logs are flushed when test completes
 	t.Cleanup(func() {
-		logger.Sync()
+		_ = logger.Sync() // Ignore sync errors in tests
 	})
 
 	return logger
@@ -57,7 +57,7 @@ func SetupTestLoggerWithLevel(t *testing.T, level zapcore.Level) *zap.Logger {
 	}
 
 	t.Cleanup(func() {
-		logger.Sync()
+		_ = logger.Sync() // Ignore sync errors in tests
 	})
 
 	return logger

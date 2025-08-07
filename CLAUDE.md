@@ -95,6 +95,7 @@ make migrate-up           # Apply PostgreSQL migrations
 5. **Documentation**: Update relevant docs when making changes
 6. **Sprint Awareness**: Check current sprint goals in project plan
 7. **Comprehensive Logging**: Use Uber Zap for all services and tests
+8. **No Sleep Commands**: Never use `sleep` or `wait` commands for async processes like GitHub Actions, CI/CD, or external services. Instead, prompt the user to ask for status checks after sufficient time has passed.
 
 ## Logging Requirements for Claude Code
 - **Library**: Use `go.uber.org/zap` for all logging (already in go.mod)
