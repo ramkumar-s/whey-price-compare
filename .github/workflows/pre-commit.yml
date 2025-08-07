@@ -28,8 +28,9 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-v2-${{ hashFiles('**/go.sum') }}
         restore-keys: |
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-v2-
           ${{ runner.os }}-go-${{ env.GO_VERSION }}-
           ${{ runner.os }}-go-
 
@@ -108,14 +109,12 @@ jobs:
         
         echo "✅ Critical unit tests completed (implemented packages only)"
 
-    # Secret detection
+    # Secret detection  
     - name: Secret detection
       uses: trufflesecurity/trufflehog@main
       with:
         path: ./
-        base: main
-        head: HEAD
-        extra_args: --debug --only-verified
+        extra_args: --debug --only-verified --no-update
 
     # License check
     - name: License header check
