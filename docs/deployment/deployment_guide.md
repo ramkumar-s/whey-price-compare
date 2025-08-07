@@ -100,7 +100,7 @@ DB_HOST=postgres
 DB_PORT=5432
 DB_NAME=proteinprices
 DB_USER=proteinprices
-DB_PASSWORD=secure_random_password_here
+DB_PASSWORD=<YOUR_SECURE_DATABASE_PASSWORD>
 DB_SSL_MODE=require
 
 # Redis Configuration
@@ -131,11 +131,11 @@ JWT_REFRESH_EXPIRY=7d
 
 # OAuth Configuration
 OAUTH_GOOGLE_CLIENT_ID=google_oauth_client_id_here
-OAUTH_GOOGLE_CLIENT_SECRET=google_oauth_client_secret_here
+OAUTH_GOOGLE_CLIENT_SECRET=<YOUR_GOOGLE_CLIENT_SECRET>
 OAUTH_GITHUB_CLIENT_ID=github_oauth_client_id_here
-OAUTH_GITHUB_CLIENT_SECRET=github_oauth_client_secret_here
+OAUTH_GITHUB_CLIENT_SECRET=<YOUR_GITHUB_CLIENT_SECRET>
 OAUTH_FACEBOOK_CLIENT_ID=facebook_oauth_client_id_here
-OAUTH_FACEBOOK_CLIENT_SECRET=facebook_oauth_client_secret_here
+OAUTH_FACEBOOK_CLIENT_SECRET=<YOUR_FACEBOOK_CLIENT_SECRET>
 
 # Encryption Configuration
 ENCRYPTION_MASTER_KEY=32_byte_master_encryption_key_for_pii_data_protection
@@ -146,11 +146,11 @@ GDPR_DATA_RETENTION_DAYS=2555  # 7 years default
 GDPR_EXPORT_EXPIRY_HOURS=72
 GDPR_DELETION_DELAY_DAYS=30
 
-# Email Configuration
+# Email Configuration (replace with actual values in production)
 SMTP_HOST=smtp.sendgrid.net
 SMTP_PORT=587
 SMTP_USERNAME=apikey
-SMTP_PASSWORD=sendgrid_api_key_here
+SMTP_PASSWORD=<YOUR_SENDGRID_API_KEY_HERE>
 FROM_EMAIL=noreply@proteinprices.com
 
 # Notification Configuration
