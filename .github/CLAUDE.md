@@ -21,7 +21,7 @@ Cost-Effective CI/CD Pipeline:
 **Duration**: <5 minutes total
 **Cost**: FREE (unlimited minutes for public repositories)  
 **Strategy**: Parallel execution for maximum speed
-**Go Version**: 1.22+ (updated to fix govulncheck vulnerabilities)
+**Go Version**: 1.24+ (updated from 1.21 to fix govulncheck vulnerabilities)
 
 #### Validation Jobs (Parallel)
 1. **Code Validation** (2-3 minutes):
@@ -33,7 +33,7 @@ Cost-Effective CI/CD Pipeline:
 2. **Security & Quality** (3-5 minutes):
    - golangci-lint analysis
    - gosec security scanning (using github.com/securego/gosec)
-   - govulncheck vulnerability checking (requires Go 1.22+)
+   - govulncheck vulnerability checking (requires Go 1.24+)
 
 3. **Bundle Size Validation** (1-2 minutes):
    - <14KB frontend bundle enforcement (enforced when implemented)
@@ -85,7 +85,7 @@ Cost-Effective CI/CD Pipeline:
 **Trigger**: Pre-commit hooks (local) and PR validation
 **Duration**: ~3 minutes
 **Purpose**: Fast quality feedback before code review
-**Go Version**: 1.22+ (updated to fix govulncheck vulnerabilities)
+**Go Version**: 1.24+ (updated from 1.21 to fix govulncheck vulnerabilities)
 
 #### Quality Checks
 - **Code Formatting**: gofmt, goimports
@@ -99,9 +99,9 @@ Cost-Effective CI/CD Pipeline:
 
 ### Go Version Upgrade (January 2025)
 - **Previous**: Go 1.21.13 
-- **Current**: Go 1.22+
+- **Current**: Go 1.24+
 - **Reason**: Fix govulncheck vulnerabilities (GO-2025-3750, GO-2025-3447, GO-2025-3373)
-- **Impact**: Both local development and CI/CD require Go 1.22+ for security compliance
+- **Impact**: Both local development and CI/CD require Go 1.24+ for security compliance
 
 ### Missing Implementation Handling
 The workflows are designed to gracefully handle missing implementations:
@@ -170,7 +170,7 @@ grep -r "password.*=.*[a-z_]*here" docs/ && echo "❌ Use <YOUR_*_HERE> format" 
 - uses: actions/checkout@v4
 - uses: actions/setup-go@v4
   with:
-    go-version: '1.21'
+    go-version: '1.24'
 
 # Cache dependencies for faster builds
 - uses: actions/cache@v3
